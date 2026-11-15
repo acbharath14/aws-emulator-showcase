@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tests and reports
+.pytest_cache/
+allure-results/
+.coverage
+htmlcov/
+
+# Emulator artifacts (downloaded package, local run state)
+*.deb
+*.rpm
+
+# Editors and OS files
+.vscode/
+.idea/
+.DS_Store

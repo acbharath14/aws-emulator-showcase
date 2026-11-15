@@ -1,0 +1,4 @@
+# Test dependencies. Pinned to the versions the suite ran against.
+-r requirements.txt
+pytest==9.2.0
+allure-pytest==2.16.2
