@@ -1,0 +1,2 @@
+# Runtime dependency. Pinned to the version verified against AWS Emulator 1.0.385.
+boto3==1.44.3

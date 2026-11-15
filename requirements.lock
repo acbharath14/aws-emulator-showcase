@@ -1,0 +1,18 @@
+# Full transitive lockfile for AWS Emulator 1.0.385.
+# Regenerate after changing requirements.txt or requirements-dev.txt:
+#   .venv/bin/pip freeze > requirements.lock
+allure-pytest==2.16.2
+allure-python-commons==2.16.2
+attrs==26.1.0
+boto3==1.44.3
+botocore==1.44.3
+iniconfig==2.3.1
+jmespath==1.1.0
+packaging==26.3
+pluggy==1.7.0
+Pygments==2.21.0
+pytest==9.2.0
+python-dateutil==2.9.0.post0
+s3transfer==0.19.3
+six==1.17.0
+urllib3==2.8.0
