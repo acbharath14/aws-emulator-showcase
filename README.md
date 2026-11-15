@@ -113,8 +113,41 @@ container runs, no DNS zone resolves, no database engine starts. The
 - `scripts/preflight.py`: checks Python, boto3, the emulator binary, and
   the running emulator. Installs the package on Linux when it can and
   starts the emulator with telemetry off.
+- `terraform/`: the same order flow provisioned with Terraform instead of
+  boto3. See the Terraform section below.
 - `.github/workflows/ci.yml`: installs the emulator, starts it, runs the
   suite, uploads the Allure results. It holds no AWS credentials.
+
+## Terraform
+
+The `terraform/` directory provisions the same order flow as code: S3,
+SQS, DynamoDB, Lambda, Step Functions, SNS, CloudWatch, and the two IAM
+roles, all against the emulator, with no AWS account. The Lambda runs the
+same `src/orderflow/processor.py` the tests exercise. Terraform 1.17.2
+(the version this was verified with; `versions.tf` requires 1.17.x),
+with the lock file pinning `hashicorp/aws` 6.73.0 and
+`hashicorp/archive` 2.8.1. State is a local file, and the emulator
+forgets everything on restart.
+
+Usage, after preflight:
+
+```
+export SSL_CERT_FILE=$HOME/.aws/emulator/9297/ca.pem
+export AWS_CA_BUNDLE=$HOME/.aws/emulator/9297/ca.pem
+terraform -chdir=terraform init
+terraform -chdir=terraform plan
+terraform -chdir=terraform apply
+terraform -chdir=terraform destroy
+```
+
+The `AWS_CA_BUNDLE` export is the part that bites. The emulator serves
+HTTPS with a self-signed CA, and the AWS SDK for Go, which Terraform
+uses, reads its trust bundle from that variable. Without it, every
+provider call fails TLS verification and the SDK retries each call 25
+times, so the command hangs for many minutes before failing. If your
+shell already sets `AWS_CA_BUNDLE` to something else, override it to the
+emulator CA for these commands. The full story, including the emulator
+gaps found while building this, is in `terraform/README.md`.
 
 ## CI
 
@@ -123,8 +156,11 @@ The `ci` workflow runs on push and pull request to `main`, on
 the LTS Debian package, starts it with telemetry off, installs the
 pinned dependencies from `requirements.lock`, runs preflight in
 check-only mode, then runs pytest with Allure results uploaded as an
-artifact. The workflow file itself cannot be pushed through the GitHub
-API; add it through the GitHub web UI when the repo is created.
+artifact. A second job, `terraform`, runs after the test job: fmt check,
+validate, plan, apply, a boto3 smoke check against the provisioned
+stack, then destroy. The workflow file itself cannot be pushed through
+the GitHub API; add it through the GitHub web UI when the repo is
+created.
 
 ## Telemetry
 
