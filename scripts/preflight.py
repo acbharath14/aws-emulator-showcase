@@ -10,6 +10,9 @@ Checks, in order:
   4. The emulator running on the chosen port, with telemetry off. Starts
      it when it is not running.
   5. The emulator answering as its own account (000000000000).
+  6. Terraform 1.17.2, informational only. The terraform/ stack needs
+     it; the pytest suite does not, so a missing binary is a NOTE, never
+     a failure.
 
 Usage:
   python scripts/preflight.py            check, install, and start as needed
@@ -32,6 +35,11 @@ import urllib.request
 from pathlib import Path
 
 PINNED_VERSION = "1.0.385"
+PINNED_TERRAFORM = "1.17.2"
+TERRAFORM_URL = (
+    "https://releases.hashicorp.com/terraform/"
+    f"{PINNED_TERRAFORM}/terraform_{PINNED_TERRAFORM}_linux_amd64.zip"
+)
 DEB_URLS = {
     "x86_64": "https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/latest/aws-emulator_amd64.deb",
     "aarch64": "https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/latest/aws-emulator_arm64.deb",
@@ -210,6 +218,31 @@ def check_emulator_running(port, check_only):
     start_emulator(port)
 
 
+def check_terraform():
+    """Informational only: the terraform/ stack needs Terraform, the
+    pytest suite does not. A missing binary is a NOTE, never a failure.
+    """
+    binary = shutil.which("terraform")
+    if not binary:
+        print(
+            "NOTE: terraform is not installed; the terraform/ stack needs "
+            f"Terraform {PINNED_TERRAFORM}. Install it from "
+            f"{TERRAFORM_URL} and put the binary on PATH. "
+            "The pytest suite does not need it."
+        )
+        return
+    result = subprocess.run(
+        ["terraform", "version"], capture_output=True, text=True
+    )
+    version = result.stdout.strip().splitlines()[0] if result.stdout else "?"
+    ok(f"terraform present ({version})")
+    if PINNED_TERRAFORM not in version:
+        print(
+            f"NOTE: this repo pins Terraform {PINNED_TERRAFORM}; "
+            f"installed version is {version}."
+        )
+
+
 def check_identity(port):
     try:
         import boto3
@@ -258,6 +291,7 @@ def main():
     check_emulator_binary()
     check_emulator_running(args.port, args.check_only)
     check_identity(args.port)
+    check_terraform()
     print()
     print("Preflight passed. Run the suite with: pytest")
     print("Or with an Allure report: pytest --alluredir=allure-results")
